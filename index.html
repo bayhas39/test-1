@@ -388,6 +388,26 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
           color: #52525b;
           margin-top: 0.5rem;
         }
+        .ai-sync-bar {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 1rem;
+          font-size: 0.75rem;
+          color: #71717a;
+        }
+        .ai-sync-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 8px rgba(16,185,129,0.6);
+          animation: ai-pulse 2s ease-in-out infinite;
+        }
+        @keyframes ai-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
         .ai-tabs-bar {
           display: flex;
           gap: 0.25rem;
@@ -602,6 +622,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
               '<h1 class="ai-page-title">' + d.title + '</h1>' +
               '<p class="ai-page-subtitle">Intelligent analysis of security events, alerts, and system health</p>' +
               '<p class="ai-page-date">' + d.date + '</p>' +
+              '<div class="ai-sync-bar"><span class="ai-sync-dot"></span><span class="ai-sync-time">Synced ' + new Date().toLocaleTimeString() + '</span><span>&middot; Auto-refresh enabled</span></div>' +
             '</div>' +
             '<div class="ai-tabs-bar">' +
               ['day', 'week', 'month', 'year'].map(function(p) {
@@ -628,7 +649,48 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
         });
       }
 
+      function syncStatus() {
+        var el = root.querySelector('.ai-sync-dot');
+        if (el) {
+          el.style.background = '#10b981';
+          el.style.boxShadow = '0 0 8px rgba(16,185,129,0.6)';
+        }
+        var t = root.querySelector('.ai-sync-time');
+        if (t) t.textContent = 'Synced ' + new Date().toLocaleTimeString();
+      }
+
+      function startAutoSync() {
+        setInterval(function() {
+          var lastSync = localStorage.getItem('dhre_ai_last_sync');
+          var now = Date.now();
+          if (!lastSync || now - parseInt(lastSync) > 30000) {
+            localStorage.setItem('dhre_ai_last_sync', now.toString());
+            localStorage.setItem('dhre_ai_period', currentPeriod);
+            renderPage();
+            syncStatus();
+          }
+        }, 15000);
+
+        window.addEventListener('storage', function(e) {
+          if (e.key === 'dhre_ai_period' && e.newValue !== currentPeriod) {
+            currentPeriod = e.newValue;
+            renderPage();
+            syncStatus();
+          }
+          if (e.key === 'dhre_ai_refresh') {
+            renderPage();
+            syncStatus();
+          }
+        });
+
+        window.addEventListener('dhre-dashboard-update', function() {
+          renderPage();
+          syncStatus();
+        });
+      }
+
       renderPage();
+      startAutoSync();
     })();
     </script>
   </body>
