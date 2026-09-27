@@ -336,5 +336,300 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
   </head>
   <body>
     <div id="root"></div>
+    <div id="ai-page-root"></div>
+
+    <script>
+    (function () {
+      const style = document.createElement('style');
+      style.textContent = `
+        #ai-page-root {
+          font-family: 'Inter', system-ui, sans-serif;
+          background: #08080d;
+          min-height: 100vh;
+          color: #e4e4e7;
+        }
+        .ai-page {
+          max-width: 960px;
+          margin: 0 auto;
+          padding: 3rem 2rem;
+        }
+        .ai-page-hero {
+          margin-bottom: 2.5rem;
+        }
+        .ai-page-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.15));
+          border: 1px solid rgba(139,92,246,0.3);
+          color: #a78bfa;
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 0.3rem 0.75rem;
+          border-radius: 999px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          margin-bottom: 1rem;
+        }
+        .ai-page-title {
+          font-size: 2.25rem;
+          font-weight: 800;
+          color: #fafafa;
+          letter-spacing: -0.03em;
+          line-height: 1.2;
+        }
+        .ai-page-subtitle {
+          font-size: 1rem;
+          color: #71717a;
+          margin-top: 0.5rem;
+        }
+        .ai-page-date {
+          font-size: 0.8rem;
+          color: #52525b;
+          margin-top: 0.5rem;
+        }
+        .ai-tabs-bar {
+          display: flex;
+          gap: 0.25rem;
+          background: #111118;
+          border: 1px solid #1f1f2e;
+          border-radius: 0.85rem;
+          padding: 0.3rem;
+          margin-bottom: 2rem;
+        }
+        .ai-tab {
+          flex: 1;
+          background: none;
+          border: none;
+          color: #71717a;
+          font-size: 0.85rem;
+          font-weight: 600;
+          padding: 0.7rem 1rem;
+          cursor: pointer;
+          border-radius: 0.6rem;
+          transition: all 0.2s;
+          font-family: 'Inter', sans-serif;
+        }
+        .ai-tab:hover { color: #a1a1aa; }
+        .ai-tab.active {
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          color: #fff;
+        }
+        .ai-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+        .ai-stat {
+          background: #111118;
+          border: 1px solid #1f1f2e;
+          border-radius: 0.85rem;
+          padding: 1.25rem;
+        }
+        .ai-stat-value {
+          font-size: 1.6rem;
+          font-weight: 700;
+          color: #a78bfa;
+          letter-spacing: -0.02em;
+        }
+        .ai-stat-label {
+          font-size: 0.7rem;
+          color: #71717a;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-top: 0.25rem;
+        }
+        .ai-section-title {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #a1a1aa;
+          text-transform: uppercase;
+          letter-spacing: 0.07em;
+          margin: 2rem 0 0.75rem;
+        }
+        .ai-insight {
+          border-left: 3px solid #6366f1;
+          background: #111118;
+          padding: 0.85rem 1.1rem;
+          border-radius: 0 0.55rem 0.55rem 0;
+          margin: 0.5rem 0;
+          font-size: 0.88rem;
+          line-height: 1.65;
+          color: #d4d4d8;
+        }
+        .ai-insight strong {
+          display: block;
+          font-size: 0.68rem;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 0.15rem;
+        }
+        .ai-insight.warning { border-left-color: #f59e0b; }
+        .ai-insight.warning strong { color: #f59e0b; }
+        .ai-insight.success { border-left-color: #10b981; }
+        .ai-insight.success strong { color: #10b981; }
+        .ai-insight.danger { border-left-color: #ef4444; }
+        .ai-insight.danger strong { color: #ef4444; }
+        .ai-exec-summary {
+          background: #111118;
+          border: 1px solid #1f1f2e;
+          border-radius: 0.85rem;
+          padding: 1.5rem;
+          font-size: 0.92rem;
+          line-height: 1.85;
+          color: #d4d4d8;
+        }
+        .ai-page-footer {
+          font-size: 0.72rem;
+          color: #3f3f46;
+          margin-top: 2.5rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid #18181f;
+          display: flex;
+          justify-content: space-between;
+        }
+        .ai-loading {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 6rem;
+          color: #71717a;
+          font-size: 0.9rem;
+          gap: 1.25rem;
+        }
+        .ai-spinner {
+          width: 32px;
+          height: 32px;
+          border: 3px solid #1f1f2e;
+          border-top-color: #8b5cf6;
+          border-radius: 50%;
+          animation: ai-spin 0.8s linear infinite;
+        }
+        @keyframes ai-spin { to { transform: rotate(360deg); } }
+      `;
+      document.head.appendChild(style);
+
+      const root = document.getElementById('ai-page-root');
+
+      const summaryData = {
+        day: {
+          title: "Today's Security Summary",
+          date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          stats: [
+            { value: '2,847', label: 'Events Analyzed' },
+            { value: '14', label: 'Alerts Triggered' },
+            { value: '3', label: 'Critical Issues' },
+            { value: '99.2%', label: 'Uptime' }
+          ],
+          insights: [
+            { type: 'warning', text: 'Unusual login activity from 192.168.x.x between 02:00-04:00 UTC. 47 failed attempts followed by 1 successful authentication.' },
+            { type: 'danger', text: 'Critical vulnerability CVE-2026-xxxx detected on server node-03. Immediate patching recommended.' },
+            { type: 'success', text: 'All firewall rules passed integrity check. No unauthorized modifications detected.' },
+            { type: 'warning', text: 'SSL certificate for api.dhre.io expires in 12 days. Auto-renewal not configured.' }
+          ],
+          summary: "Today's security posture shows elevated threat activity during early morning hours. A coordinated brute-force attempt was blocked by rate-limiting rules, though one credential compromise was confirmed. The critical CVE on node-03 requires immediate attention. Overall system resilience remains strong with 99.2% uptime."
+        },
+        week: {
+          title: 'Weekly Security Report',
+          date: (() => { const n = new Date(), s = new Date(n); s.setDate(n.getDate() - 7); return s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' — ' + n.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); })(),
+          stats: [
+            { value: '19,204', label: 'Events Analyzed' },
+            { value: '87', label: 'Alerts Triggered' },
+            { value: '12', label: 'Critical Issues' },
+            { value: '98.7%', label: 'Avg Uptime' }
+          ],
+          insights: [
+            { type: 'danger', text: '12 critical vulnerabilities across 3 servers. 5 patched, 7 pending maintenance window.' },
+            { type: 'warning', text: 'Phishing campaign targeting finance dept. 3 emails reported, 0 credentials compromised due to MFA.' },
+            { type: 'success', text: 'DDoS mitigation absorbed 2 attacks peaking at 45 Gbps. Zero service degradation.' },
+            { type: 'warning', text: 'Anomalous data transfer on db-replica-02. 340GB outbound vs normal 40GB baseline.' }
+          ],
+          summary: "This week saw a 23% increase in threat activity, driven by automated scanning and credential stuffing. Two DDoS attempts were mitigated and a phishing campaign blocked. 7 critical vulnerabilities remain unpatched. The anomalous outbound transfer on the database replica warrants forensic review."
+        },
+        month: {
+          title: 'Monthly Security Overview',
+          date: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          stats: [
+            { value: '82,451', label: 'Events Analyzed' },
+            { value: '312', label: 'Alerts Triggered' },
+            { value: '47', label: 'Critical Issues' },
+            { value: '99.1%', label: 'Avg Uptime' }
+          ],
+          insights: [
+            { type: 'warning', text: 'Alert fatigue: 34% of triggered alerts were false positives. Rule tuning recommended.' },
+            { type: 'success', text: 'Zero-day exploitation attempts against API gateway blocked by behavioral analysis.' },
+            { type: 'danger', text: 'Legacy payment-v2 running unsupported TLS 1.0. Compliance violation — upgrade within 30 days.' },
+            { type: 'success', text: 'Training completion at 94%. Phishing click rate dropped to 3.2% from 8.7%.' }
+          ],
+          summary: "Monthly operations maintained 99.1% uptime with 47 critical issues resolved. Alert fatigue is a concern at 34% false positive rate. The legacy payment system running deprecated TLS is the top risk. Training metrics show 63% improvement in phishing awareness month-over-month."
+        },
+        year: {
+          title: 'Annual Security Report',
+          date: new Date().getFullYear().toString(),
+          stats: [
+            { value: '1.02M', label: 'Events Analyzed' },
+            { value: '4,208', label: 'Alerts Triggered' },
+            { value: '156', label: 'Critical Issues' },
+            { value: '99.4%', label: 'Avg Uptime' }
+          ],
+          insights: [
+            { type: 'success', text: 'Zero successful data breaches. All attack vectors detected and neutralized.' },
+            { type: 'warning', text: 'Event volume grew 340% YoY while analyst team grew 40%. Scaling required.' },
+            { type: 'danger', text: '6 end-of-life services still in production. Migration plan needed for Q1 next year.' },
+            { type: 'success', text: 'SOC 2 Type II achieved. All controls passed with zero major findings.' }
+          ],
+          summary: "Annual report confirms a mature security program: 1M+ events analyzed, zero successful breaches, SOC 2 Type II certified, 63% MTTD reduction. Key challenges ahead: scaling ops for 340% event growth, migrating EOL components, and closing the analyst workload gap through automation."
+        }
+      };
+
+      let currentPeriod = 'day';
+
+      function renderPage() {
+        const d = summaryData[currentPeriod];
+        const insightsHtml = d.insights.map(i =>
+          '<div class="ai-insight ' + i.type + '"><strong>' + (i.type === 'danger' ? 'CRITICAL' : i.type === 'warning' ? 'WARNING' : 'INFO') + '</strong>' + i.text + '</div>'
+        ).join('');
+        const statsHtml = d.stats.map(s =>
+          '<div class="ai-stat"><div class="ai-stat-value">' + s.value + '</div><div class="ai-stat-label">' + s.label + '</div></div>'
+        ).join('');
+
+        root.innerHTML =
+          '<div class="ai-page">' +
+            '<div class="ai-page-hero">' +
+              '<div class="ai-page-badge">AI Generated Report</div>' +
+              '<h1 class="ai-page-title">' + d.title + '</h1>' +
+              '<p class="ai-page-subtitle">Intelligent analysis of security events, alerts, and system health</p>' +
+              '<p class="ai-page-date">' + d.date + '</p>' +
+            '</div>' +
+            '<div class="ai-tabs-bar">' +
+              ['day', 'week', 'month', 'year'].map(function(p) {
+                return '<button class="ai-tab' + (p === currentPeriod ? ' active' : '') + '" data-period="' + p + '">' + p.charAt(0).toUpperCase() + p.slice(1) + '</button>';
+              }).join('') +
+            '</div>' +
+            '<div class="ai-stat-grid">' + statsHtml + '</div>' +
+            '<div class="ai-section-title">Key Insights</div>' +
+            insightsHtml +
+            '<div class="ai-section-title">Executive Summary</div>' +
+            '<div class="ai-exec-summary">' + d.summary + '</div>' +
+            '<div class="ai-page-footer">' +
+              '<span>DHRE AI Security Analyst</span>' +
+              '<span>Generated ' + new Date().toLocaleTimeString() + '</span>' +
+            '</div>' +
+          '</div>';
+
+        root.querySelectorAll('.ai-tab').forEach(function(tab) {
+          tab.addEventListener('click', function() {
+            currentPeriod = this.dataset.period;
+            root.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div>Analyzing security data...</div>';
+            setTimeout(renderPage, 500);
+          });
+        });
+      }
+
+      renderPage();
+    })();
+    </script>
   </body>
 </html>
