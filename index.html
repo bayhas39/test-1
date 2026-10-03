@@ -711,6 +711,58 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 })();
 </script>
 <script>
+(function(){
+  var API = 'https://test-1-blond-tau.vercel.app/api/sync';
+  var COLS = ['sites','incidents','accidents'];
+  var KEY = { sites:'site-inspection-sites-v80', incidents:'site-inspection-incidents', accidents:'dhre-accidents' };
+  var REVKEY = '__dhre_sync_rev';
+  function revOf(){ try { return JSON.parse(localStorage.getItem(REVKEY)||'{}') } catch(e){ return {} } }
+  function setRev(r){ try{ localStorage.setItem(REVKEY, JSON.stringify(r)) }catch(e){} }
+  async function push(col){
+    try{
+      var raw = localStorage.getItem(KEY[col]);
+      if (raw == null) return;
+      var resp = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ collection: col, payload: JSON.parse(raw) }) });
+      var j = await resp.json().catch(function(){ return null });
+      if (j && j.rev) { var r = revOf(); r[col] = j.rev; setRev(r); }
+    }catch(e){}
+  }
+  async function pull(col){
+    try{
+      var resp = await fetch(API + '?collection=' + col);
+      if (!resp.ok) return false;
+      var res = await resp.json().catch(function(){ return null });
+      if (!res || !res.payload || !res.rev) return false;
+      var r = revOf();
+      if (res.rev <= (r[col] || 0)) return false;
+      var newStr = JSON.stringify(res.payload);
+      var cur = localStorage.getItem(KEY[col]);
+      r[col] = res.rev; setRev(r);
+      if (newStr === cur) return false;
+      localStorage.setItem(KEY[col], newStr);
+      return true;
+    }catch(e){ return false }
+  }
+  async function seed(){
+    for (var i=0;i<COLS.length;i++){ var c=COLS[i];
+      try{ var r=await fetch(API+'?collection='+c); var res=await r.json().catch(function(){return null});
+        if(!res || !res.payload){ await push(c); } }catch(e){}
+    }
+  }
+  COLS.forEach(function(c){
+    var k = KEY[c]; var prev = localStorage.getItem(k);
+    setInterval(function(){ var cur = localStorage.getItem(k); if (cur !== prev) { prev = cur; push(c); } }, 2000);
+  });
+  async function tick(){
+    var any = false;
+    for (var i=0;i<COLS.length;i++){ try{ if (await pull(COLS[i])) any = true; }catch(e){} }
+    if (any) location.reload();
+  }
+  seed(); tick();
+  setInterval(tick, 7000);
+})();
+</script>
+<script>
 (function () {
   window.__dhreExport = function () {
     var data = {};
