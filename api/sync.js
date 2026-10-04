@@ -1,16 +1,16 @@
 // DHRE shared sync endpoint (Vercel Serverless Function, zero dependencies).
 //
-// Stores site data in a Vercel KV (Upstash) Redis database so every dashboard /
-// owner portal tab (Chrome, Edge, phone, different device) sees the SAME data.
+// Stores site data in Upstash Redis (REST API) so every dashboard / owner portal
+// tab (Chrome, Edge, phone, different device) sees the SAME data.
 //
-// Required environment variables on this Vercel project:
-//   KV_REST_API_URL    - from your Vercel KV database
-//   KV_REST_API_TOKEN  - from your Vercel KV database
+// Uses Upstash Redis REST API directly - compatible with Vercel KV format.
+// Credentials are baked in for zero-config deployment.
 
 export const config = { runtime: 'nodejs' }
 
-const URL = process.env.KV_REST_API_URL
-const TOKEN = process.env.KV_REST_API_TOKEN
+// Upstash Redis REST API credentials (provided by user)
+const URL = 'https://qstash-us-east-1.upstash.io'
+const TOKEN = 'eyJVc2VySUQiOiI0ZWM0NDYxNy0xMGU2LTQ5YzQtOGE3My05ZDNhNzg2YTBiNmUiLCJQYXNzd29yZCI6IjU4ZTZmZWZhOGVmMTRkZDNiNmRhOThmZjY3Zjk2ZGFkIn0='
 
 const COLLECTIONS = ['sites', 'incidents', 'accidents']
 
@@ -36,7 +36,6 @@ async function kv(cmd) {
 export default async function handler(req, res) {
   headers(res)
   if (req.method === 'OPTIONS') return res.status(200).end()
-  if (!URL || !TOKEN) return res.status(501).json({ error: 'KV not configured' })
 
   const collection = String(req.query?.collection || req.body?.collection || '')
   if (!COLLECTIONS.includes(collection)) {
