@@ -759,7 +759,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
     if (any) location.reload();
   }
   seed(); tick();
-  setInterval(tick, 7000);
+  setInterval(tick, 2000);
 })();
 </script>
 <script>
@@ -854,5 +854,28 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 })();
 </script>
 
+<script>
+(function(){
+  // Capture the Owner window when a sync request arrives from it.
+  window.__dhreOwnerWindow = null;
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type === 'dhre-request-sites' || d.type === 'dhre-request-incidents' || d.type === 'dhre-request-accidents') {
+      window.__dhreOwnerWindow = e.source;
+    }
+  });
+  // Periodically push our localStorage state to the captured Owner window.
+  setInterval(function(){
+    try {
+      var w = window.__dhreOwnerWindow;
+      if (w && !w.closed) {
+        w.postMessage({type:'dhre-sites-update', sites: JSON.parse(localStorage.getItem('site-inspection-sites-v80')||'[]')}, '*');
+        w.postMessage({type:'dhre-incidents-update', incidents: JSON.parse(localStorage.getItem('site-inspection-incidents')||'[]')}, '*');
+        w.postMessage({type:'dhre-accidents-update', accidents: JSON.parse(localStorage.getItem('dhre-accidents')||'[]')}, '*');
+      }
+    } catch(e){}
+  }, 2000);
+})();
+</script>
 </body>
 </html>
