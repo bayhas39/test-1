@@ -854,6 +854,53 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
 })();
 </script>
 
+<div id="dhre-sync-btn" style="position:fixed;bottom:12px;right:16px;z-index:99999;background:#06b6d4;color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.25);font-family:Inter,sans-serif;user-select:none;">⟳ Sync Now</div>
+<script>
+(function(){
+  var btn = document.getElementById('dhre-sync-btn');
+  if (!btn) return;
+  var inFlight = false;
+  function syncNow(){
+    if(inFlight) return;
+    inFlight = true;
+    btn.textContent = 'Syncing...';
+    try {
+      // capture current state
+      var sites, incidents, accidents;
+      try { sites = JSON.parse(localStorage.getItem('site-inspection-sites-v80')||'[]'); } catch(e){ sites = []; }
+      try { incidents = JSON.parse(localStorage.getItem('site-inspection-incidents')||'[]'); } catch(e){ incidents = []; }
+      try { accidents = JSON.parse(localStorage.getItem('dhre-accidents')||'[]'); } catch(e){ accidents = []; }
+
+      // push locally via BroadcastChannel + DOM events
+      try {
+        var bc = new BroadcastChannel('dhre-sync');
+        bc.postMessage({type:'sites-update', sites: sites});
+        bc.postMessage({type:'dhre-sites-update', sites: sites});
+        bc.postMessage({type:'incidents-update', incidents: incidents});
+        bc.postMessage({type:'dhre-incidents-update', incidents: incidents});
+        bc.postMessage({type:'accidents-update', accidents: accidents});
+        bc.postMessage({type:'dhre-accidents-update', accidents: accidents});
+        bc.close();
+      } catch(e){}
+      try { window.dispatchEvent(new Event('dhre-dashboard-update')); } catch(e){}
+
+      // if an owner window was captured, push directly too
+      var w = window.__dhreOwnerWindow;
+      if (w && !w.closed) {
+        try { w.postMessage({type:'dhre-sites-update', sites: sites}, '*'); } catch(e){}
+        try { w.postMessage({type:'dhre-incidents-update', incidents: incidents}, '*'); } catch(e){}
+        try { w.postMessage({type:'dhre-accidents-update', accidents: accidents}, '*'); } catch(e){}
+      }
+    } catch(e){} finally {
+      setTimeout(function(){ inFlight=false; btn.textContent='⟳ Sync Now'; }, 800);
+    }
+  }
+  btn.addEventListener('click', syncNow);
+  // also expose as a global for other pages / consoles
+  window.__dhreSyncNow = syncNow;
+})();
+</script>
+
 <script>
 (function(){
   // Capture the Owner window when a sync request arrives from it.
